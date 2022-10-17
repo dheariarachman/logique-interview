@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -49,19 +50,19 @@ export class UsersController {
     status: 500,
     description: 'Something went wrong. Please, try again later',
   })
-  @ApiQuery({ name: 'q', description: 'Query by' })
-  @ApiQuery({ name: 'ob', description: 'Order by' })
-  @ApiQuery({ name: 'sb', description: 'Sort by' })
-  @ApiQuery({ name: 'of', description: 'Offset' })
-  @ApiQuery({ name: 'lt', description: 'limit' })
+  @ApiQuery({ name: 'q', description: 'Query by', required: false })
+  @ApiQuery({ name: 'ob', description: 'Order by', required: false })
+  @ApiQuery({ name: 'sb', description: 'Sort by', required: false })
+  @ApiQuery({ name: 'of', description: 'Offset', required: false })
+  @ApiQuery({ name: 'lt', description: 'limit', required: false })
   findAll(
     @Query('q') q: string,
     @Query('ob') ob: string,
     @Query('sb') sb: string,
-    @Query('of') of: string,
-    @Query('lt') lt: string,
+    @Query('of', ParseIntPipe) of: number,
+    @Query('lt', ParseIntPipe) lt: number,
   ) {
-    return this.usersService.findAll();
+    return this.usersService.findAll(q, ob, sb, of, lt);
   }
 
   /**

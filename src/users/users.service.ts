@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserSortBy } from './enums/sort_by.enum';
 
 @Injectable()
 export class UsersService {
@@ -43,41 +44,82 @@ export class UsersService {
     page: number,
     limit: number,
   ) {
-    const skip = (page - 1) * limit;
+    const userSortBy: UserSortBy = sortBy as UserSortBy;
+
+    const orderByObj: Prisma.UserOrderByWithRelationInput = {};
+    if (orderBy === 'name') {
+      orderByObj.name = userSortBy;
+    }
+    if (orderBy === 'email') {
+      orderByObj.email = userSortBy;
+    }
     try {
       const [data, itemLength] = await this.prisma.$transaction([
         this.prisma.user.findMany({
-          skip,
+          skip: page,
           take: limit,
+          orderBy: orderByObj,
           where: {
-            OR: {
-              address: {
-                contains: query,
-              },
-              name: {
-                contains: query,
-              },
-              creditcard_ccv: {
-                contains: query,
-              },
-              creditcard_expired: {
-                contains: query,
-              },
-              creditcard_name: {
-                contains: query,
-              },
-              creditcard_number: {
-                contains: query,
-              },
+            address: {
+              contains: query,
+            },
+            name: {
+              contains: query,
+            },
+            creditcard_ccv: {
+              contains: query,
+            },
+            creditcard_expired: {
+              contains: query,
+            },
+            creditcard_name: {
+              contains: query,
+            },
+            creditcard_number: {
+              contains: query,
             },
           },
         }),
-        this.prisma.user.count({}),
+        this.prisma.user.count({
+          skip: page,
+          take: limit,
+          where: {
+            address: {
+              contains: query,
+            },
+            name: {
+              contains: query,
+            },
+            creditcard_ccv: {
+              contains: query,
+            },
+            creditcard_expired: {
+              contains: query,
+            },
+            creditcard_name: {
+              contains: query,
+            },
+            creditcard_number: {
+              contains: query,
+            },
+          },
+        }),
       ]);
 
       return {
         count: itemLength,
-        rows: data,
+        rows: data.map((v) => ({
+          user_id: v.user_id,
+          name: v.name,
+          email: v.email,
+          address: v.address,
+          creditcard: {
+            type: v.creditcard_type,
+            number: v.creditcard_number,
+            name: v.creditcard_name,
+            expired: v.creditcard_expired,
+          },
+        })),
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -139,33 +181,30 @@ export class UsersService {
     }
   }
 
+  /**
+   * Update user info
+   *
+   * @param id number
+   * @param updateUserDto objectUser
+   * @returns User
+   */
   async update(id: number, updateUserDto: UpdateUserDto) {
     try {
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.user.update({
+        select: {
+          user_id: true,
+        },
         where: {
           user_id: id,
+        },
+        data: {
+          ...updateUserDto,
         },
       });
 
       if (user) {
-        const {
-          creditcard_ccv,
-          creditcard_expired,
-          creditcard_name,
-          creditcard_number,
-          creditcard_type,
-          photos,
-          ...rest
-        } = user;
-
         return {
-          ...rest,
-          creditcard: {
-            type: creditcard_type,
-            number: creditcard_number,
-            name: creditcard_name,
-            expired: creditcard_expired,
-          },
+          success: true,
         };
       }
       throw new NotFoundException({ error: 'User not found' });
