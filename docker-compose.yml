@@ -26,7 +26,7 @@ services:
       - POSTGRES_PASSWORD=p4ssw0rd
       - POSTGRES_DB=db
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - logique-data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', "sh -c 'pg_isready -U postgres -d db'"]
       interval: 10s
@@ -34,4 +34,4 @@ services:
       retries: 3
 
 volumes:
-  pg-data:
+  logique-data:
