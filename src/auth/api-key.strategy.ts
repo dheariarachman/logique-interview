@@ -1,28 +1,33 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { HeaderAPIKeyStrategy } from 'passport-headerapikey';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-headerapikey/lib/Strategy';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
 
-export class HeaderAPIKeyStrategy extends PassportStrategy(
-  Strategy,
+@Injectable()
+export class ApiKeyStrategy extends PassportStrategy(
+  HeaderAPIKeyStrategy,
   'api-key',
 ) {
-  constructor(private readonly configService: ConfigService) {
-    super({ header: 'key', prefix: '' }, true, async (apiKey, done) => {
-      return this.validate(apiKey, done);
-    });
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {
+    const headerKeyApiKey =
+      configService.get<string>('HEADER_KEY_API_KEY') || '';
+
+    super(
+      { header: headerKeyApiKey, prefix: '' },
+      true,
+      async (apikey, done) => {
+        if (this.authService.validateApiKey(apikey)) {
+          return done(null, true);
+        }
+        return done(
+          new UnauthorizedException({ error: 'Invalid API Key' }),
+          null,
+        );
+      },
+    );
   }
-
-  public validate = (apiKey: string, done: (err: Error, data) => {}) => {
-    console.log(apiKey);
-    if (this.configService.get<string>('API_KEY') === apiKey) {
-      done(null, true);
-    }
-
-    if (this.configService.get<string>('API_KEY') !== apiKey) {
-      done(new UnauthorizedException({ error: 'Invalid API Key' }), null);
-    }
-
-    done(new ForbiddenException('Api key is missing'), null);
-  };
 }

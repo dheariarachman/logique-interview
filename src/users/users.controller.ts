@@ -7,13 +7,23 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiOkResponse, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiQuery,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserEntity } from './entities/user.entity';
+import { ApiKeyAuthGuard } from 'src/auth/guard/auth.guard';
 
+@UseGuards(ApiKeyAuthGuard)
+@ApiSecurity('access-key')
 @Controller('users')
 @ApiTags('users')
 export class UsersController {
@@ -43,7 +53,6 @@ export class UsersController {
    * @returns UserService
    */
   @Get('/list')
-  // @UseGuards(AuthGuard('api-key'))
   @ApiResponse({ status: 401, description: 'Invalid API Key' })
   @ApiResponse({ status: 403, description: 'Api key is missing' })
   @ApiResponse({
@@ -51,10 +60,15 @@ export class UsersController {
     description: 'Something went wrong. Please, try again later',
   })
   @ApiQuery({ name: 'q', description: 'Query by', required: false })
-  @ApiQuery({ name: 'ob', description: 'Order by', required: false })
+  @ApiQuery({
+    name: 'ob',
+    description: 'Order by',
+    required: false,
+    example: 'email',
+  })
   @ApiQuery({ name: 'sb', description: 'Sort by', required: false })
-  @ApiQuery({ name: 'of', description: 'Offset', required: false })
-  @ApiQuery({ name: 'lt', description: 'limit', required: false })
+  @ApiQuery({ name: 'of', description: 'Offset', example: 1 })
+  @ApiQuery({ name: 'lt', description: 'limit', example: 10 })
   findAll(
     @Query('q') q: string,
     @Query('ob') ob: string,

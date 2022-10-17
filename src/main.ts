@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -14,10 +15,10 @@ async function bootstrap() {
     .addApiKey(
       {
         type: 'apiKey',
-        name: 'key',
+        name: 'api-key',
         in: 'header',
       },
-      'key',
+      'access-key',
     )
     .build();
 
